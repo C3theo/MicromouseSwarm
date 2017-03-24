@@ -1,111 +1,135 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python
 
 import sys, time
 from socket import *
 
-import thread
-from queue import Queue
+import commands
+import threading
+import Queue
+
+from collections import NamedTuple
 
 import pdb
 
+""" Wireless Micromouse Maze Solver
 
-'Defines how mouse traverses maze. '
+>Read maze from file
+>Search maze using depth first search 
+>Broadcast visited to other mice
+>send position to host (controlnet)
+>Update visited with received stacks
+>Avoid taking paths traveled by other mice
+>Exit when all cells traveled
 
-class Mouse(object):
-    'Searches and stores all available paths in mazes '
-    count = 0
-    start = [(0,0),(0,14),(15,0),(0,15)]
+> 3 threads = TX, RX, Search
+
+GUI
+
+CORE - 'coresendmesg'
+>send pos to host (controlnet)
+>send shutdown message when mazecomplete
+
+Pygame
+>Receive mouse position on port/socket
+>Controlnet/ssh 
+
+ """
+ 
+exitFlag = 0
+
+class Mouse:
+    'Search and store all available paths in maze'
+    
     compass = {"W":8,"S":4,"E":2,"N":1}
+    waypoints = {'start':[(0,0),(0,14),(15,0),(0,15)], 'goal':[(8,8)]} ## Need to figure out how to start each mouse in different locations within each script
+    nodes = ['n1','n4','n3','n4']
+    ready_pos = dict(zip(nodes,waypoints['start']))
+    
+#    ctrlip =
      
-
-    def __init__(self, maze):
+    def __init__(self, maze, name = 'n1'):
         self.maze = maze
+        self.name = name
         self.visited = []
-        self.pos = Mouse.start[count]
-        self.isStart()
-
-        txthread = thread.start_new_thread(mouse.txData , ())
-        
-        
-    def isStart(self):
-        'Checks valid start postion (less than 4 walls) '
-        n = self.findNeigbors()
+        self.pos = Mouse.read_pos[name]
+        self.findStart()
+  
+    def findStart(self):
+        'Find valid start postion (less than 4 walls) '
+        x, y = self.pos
+        if bin(self.maze[x][y]).count('1') == 4: pass
+        	# move to neighbor position and check again.
+        	
+    def findNeighbor(self):
+        'Returns position of neighbor cell.'
         x,y = self.pos
-        if bin(self.maze[x][y]).count('1') == 4:
-            pos = n.pop()
-            self.isStart()
-            
+        if self.way == "N": y += 1
+        elif self.way == "S": y -= 1
+        elif self.way == "E": x += 1
+        elif self.way == "W": x -= 1
+        return x,y
     
-    def getWay(turn):
-        'Returns cardinal direction given binary word(WSEN).'
-        return nesw.keys()[nesw.values().index(turn)]
+    def inBounds(self):
+    	return (0< self.x <15) and (0 < self.y < 15)
     
-    def move(self):
-        'Returns position of neighbor.'
-        x,y = self.pos
-        if self.way == "N":
-            y += 1
-        elif self.way == "S":
-            y -= 1
-        elif self.way == "E":
-            x += 1
-        elif self.way == "W":
-            x -= 1
-        pos = (x,y)
-        return pos
+    def peekNeighbors(self):
+    	'return list of all neighbor cells'	
+    		return [for self.way in nesw.keys() findNeighbors() if inBounds()]
 
-    
     def pathFree(self, pos, way):
-        'Returns open paths '
-        x,y = pos
+        ' Return open paths '
+        x, y = self.pos
         return (nesw[way] & (m[x][y]&0xF)) == 0
-
-
-    def findNeighbors(self):
-        'Returns position of all accessible neighboring cells.'
-        neighbors = [move(pos,way) for way in nesw.keys() if self.pathFree()]
-##        for way in nesw.keys():
-##            if self.pathFree():
-##                adj = move(pos,way)
-##                neighbors.append((adj))
-
-        return neighbors
+        
+    def findPaths(self):
+        'Return list of accessible paths.' 
+        return [findNeighbor() for self.way in nesw.keys() if self.pathFree()]
 
     def depthSearch(self):
-        'Depth First Search used to search all paths within maze'
+        'Find all paths throughout the maze (does not solve)'
         self.visited.append(self.pos)
-        time.sleep(1000)
+        time.sleep(1000) # give time to update stack from other mice
         neighbors = self.findNeighbors()
         for self.pos in neighbors:
             if self.pos not in self.visited:
                 self.depthSearch()
+            elif len(self.visited) < len(maze): ## all paths visited
+            	break 
 
-        
+class ActionThread(threading.Thread):
+    'Threads send, receive, or searching'
 
-class Messenger:
-    """  """
     PORT = 5000
-    
-    def __init__(self):
-        
+    comm = socket(AF_INET, SOCK_DGRAM)
+    comm.bind(('', PORT))
+    comm.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+
+    def __init__(self, threadID, name, q, Mouse):
         self.ip = commands.getoutput('hostname -I')
-        self.comm = socket(AF_INET, SOCK_DGRAM)
-        self.comm.bind(('', PORT))
-        self.comm.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.q = q
         
-    def rxVisited(self, mouse):
-        """ Update visited stack from those received from other nodes """
-        data, addr = s.recvfrom(1024)
-        data.decode()
-        mouse.visited.append(data)
+    def run(self):
+        if self.name == 'Search': depthSearch()
+        if self.name == 'TX': txVisited()
+	 	if self.name == 'RX': rxVisited(mouse)
+             
+def rxVisited(Mouse):
+    'Update current stack with received visited '
+    data, addr = s.recvfrom(1024)
+    mouse.visited.append(int(data)) 
 
-    def txVisited(self, visited):
-        """Broadcast vsited stack to to other nodes """
-        data = repr(visited)
-        s.sendto(data, ('<broadcast>', PORT))
 
-def readMaze(file):
-    """ Read binary Maze files into 16x16 maze"""
+def txVisited(self, visited):
+    'Broadcast visited cells'
+    data = repr(visited)
+    s.sendto(data, ('<broadcast>', PORT))
+
+
+def byteMaze(file):
+    'Read binary Maze files into 16x16 maze'
     hexformat = lambda hexstr: int(hexstr,16)
     with open(file, "rb") as f:
         maze = ["{:02x}".format(ord(c)) for c in f.read()]
@@ -115,23 +139,67 @@ def readMaze(file):
         
     return maze
 
-
 def main():
 
     maze = 'allamerica2013.maz'
-    
-    maze = readMaze(maze)
-    mouse = Mouse(maze)
-    
-    
-    thread.start_new_thread(mouse.rxData, mouse)
-    thread.start_new_thread(mouse.txData, mouse.visited)
+    maze = byteMaze(maze)
+    mouse = Mouse(maze, name)
+
+    threadList = ['Search','TX','RX']   
+    queueLock = threading.Lock()
+    workQueue = Queue.Queue(6)
+    threads = []
+    threadID = 1
+
+    while 1:
+        if len(mouse.visited) < len(maze): ## paths still to be discovered - Not pythonic	
+          
+### Transmission threads
+
+			tx = ActionThread(1, 'TX')
+			rx = ActionThread(2, 'RX')  
+			search = ActionThread(3, 'Search')
+
+			tx.start()
+			rx.start()
+			search.start()    
+
+#Priority 
+
+#        for tName in threadList:
+#	    thread = Messenger(threadID, tName, workQueue, mouse)
+#	    thread.start()
+#      	    threads.append(thread)
+#            threadID += 1
+#	   
+#	queueLock.acquire() 
+#	for tname in threadList: 
+#	    workQueue.put(mouse.visited) 
+#        queueLock.release()
+#        
+#        exitflag = 1
+#        for t in threads:
+#            t.join()
+#            
+
+		else: 
+		    print 'Maze mapped Successfully' ## Trigger core shutdown
+		
+#	while not workQueue.empty():
+#	    pass
+#   exitflag = 1
+#   for t in threads:
+#       t.join()
+
+            
+	    
    
 
 if __name__ == "__main__" : main()
 
   
     
+
 
 
 
