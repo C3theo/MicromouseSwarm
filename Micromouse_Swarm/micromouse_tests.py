@@ -1,10 +1,11 @@
 import unittest
+from mock import Mock
+
 from micrmouse import Mouse
 from micromouse import ActionThread
 
 """
     Unit tests for Micromouse Wireless Micromouse Maze Solver
-
 
  """
 
@@ -15,6 +16,9 @@ from micromouse import ActionThread
 #		self.assertEqual()
 
 
+# dunder main == dunder main test main -  sys.exitof(main.sys.argv)
+# double under
+
 class MouseSearchTest(unittest.TestCase):
 	def setUp(self):
 		self.m = Mouse()
@@ -22,8 +26,8 @@ class MouseSearchTest(unittest.TestCase):
 	
 #		self.m.visited = [] how to test visited paths
 		self.m.x, self.y = self.m.pos
-	
-def test_mazeMapped(self):
+### DFS tests
+	def test_mazeMapped(self):
     	self.m.depthFirstSearch()
     	self.assertLess(len(m.visited), len(m.maze))
     			  
@@ -48,10 +52,6 @@ def test_mazeMapped(self):
     	self.m.findNeighbors()
     	self.assertTrue(len(n) > 0)
     
-#    def test_depthFirstSearch(self):
-#    	self.m.depthFirstSearch()
-#    	self.assertEqual()
-
 class MouseUpdateTest(unittest.TestCase):
 	def fake_visited_stack(self):
 		return

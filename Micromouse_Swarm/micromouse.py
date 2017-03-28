@@ -10,18 +10,22 @@ import Queue
 from collections import NamedTuple
 
 import pdb
+import numpy
+import commands
 
 """ Wireless Micromouse Maze Solver
 
 >Read maze from file
+>Create graph
 >Search maze using depth first search 
 >Broadcast visited to other mice
->send position to host (controlnet)
+>Send position to host (controlnet)
 >Update visited with received stacks
 >Avoid taking paths traveled by other mice
 >Exit when all cells traveled
 
 > 3 threads = TX, RX, Search
+
 
 GUI
 
@@ -44,8 +48,7 @@ class Mouse:
     waypoints = {'start':[(0,0),(0,14),(15,0),(0,15)], 'goal':[(8,8)]} ## Need to figure out how to start each mouse in different locations within each script
     nodes = ['n1','n4','n3','n4']
     ready_pos = dict(zip(nodes,waypoints['start']))
-    
-#    ctrlip =
+
      
     def __init__(self, maze, name = 'n1'):
         self.maze = maze
@@ -70,16 +73,16 @@ class Mouse:
         return x,y
     
     def inBounds(self):
-    	return (0< self.x <15) and (0 < self.y < 15)
+    	return (0< self.x <len(maze)-1) and (0 < self.y < len(maze)-1)
     
     def peekNeighbors(self):
     	'return list of all neighbor cells'	
     		return [for self.way in nesw.keys() findNeighbors() if inBounds()]
 
     def pathFree(self, pos, way):
-        ' Return open paths '
+        ' Check path open'
         x, y = self.pos
-        return (nesw[way] & (m[x][y]&0xF)) == 0
+        return (nesw[way] & (maze[x][y]&0xF)) == 0
         
     def findPaths(self):
         'Return list of accessible paths.' 
@@ -88,7 +91,7 @@ class Mouse:
     def depthSearch(self):
         'Find all paths throughout the maze (does not solve)'
         self.visited.append(self.pos)
-        time.sleep(1000) # give time to update stack from other mice
+        time.sleep(500) # give time to update stack from other mice
         neighbors = self.findNeighbors()
         for self.pos in neighbors:
             if self.pos not in self.visited:
@@ -135,9 +138,29 @@ def byteMaze(file):
         maze = ["{:02x}".format(ord(c)) for c in f.read()]
         maze = map(hexformat,maze)
         maze = zip(*[iter(maze)]*16)
-        maze = map(list,maze)
-        
+        maze = map(list,maze)  
     return maze
+
+def textMaze(file):
+	'Read txt maze 1 = wall 0 = path'
+	with open(file, 'r') as f:
+		
+
+
+def maze2graph(maze):
+	'Create graph for each cell including all neighbors'
+	height = len(maze)
+	width = len(maze[0]) if height else 0
+	graph = {(i,j): [] for j in range(width) for i in range(height) if not maze[i][j]}
+	for row, col in graph.keys():
+		if row < height-1 and not maze[row+1][col]: # check N S neighbors
+			graph[(row, col)].append('S',(row+1, col))
+			graph[(row+1, col)].append('N', (row, col))
+		if col < width -1 and not maze[row][col+1]: #check E W neighbors
+			graph[row, col].append('E', (row,col+1))
+			graph[row, col+1].append('W', (row, col))
+	return graph 	
+	
 
 def main():
 
@@ -145,17 +168,10 @@ def main():
     maze = byteMaze(maze)
     mouse = Mouse(maze, name)
 
-    threadList = ['Search','TX','RX']   
-    queueLock = threading.Lock()
-    workQueue = Queue.Queue(6)
-    threads = []
-    threadID = 1
-
     while 1:
-        if len(mouse.visited) < len(maze): ## paths still to be discovered - Not pythonic	
-          
-### Transmission threads
-
+        if mouse.pos != waypoints['goal']: 
+        
+### Action threads
 			tx = ActionThread(1, 'TX')
 			rx = ActionThread(2, 'RX')  
 			search = ActionThread(3, 'Search')
@@ -163,8 +179,26 @@ def main():
 			tx.start()
 			rx.start()
 			search.start()    
+			
+		else: 
+		    print 'Maze mapped Successfully' ## Trigger core shutdown
+		    tx.join()
+			rx.join()
+			search.join()   
 
-#Priority 
+
+if __name__ == "__main__" : main()
+
+  
+  
+
+#    threadList = ['Search','TX','RX']   
+#    queueLock = threading.Lock()
+#    workQueue = Queue.Queue(6)
+#    threads = []
+#    threadID = 1    
+
+#Priority Threads
 
 #        for tName in threadList:
 #	    thread = Messenger(threadID, tName, workQueue, mouse)
@@ -180,25 +214,12 @@ def main():
 #        exitflag = 1
 #        for t in threads:
 #            t.join()
-#            
-
-		else: 
-		    print 'Maze mapped Successfully' ## Trigger core shutdown
-		
+#            	
 #	while not workQueue.empty():
 #	    pass
 #   exitflag = 1
 #   for t in threads:
 #       t.join()
-
-            
-	    
-   
-
-if __name__ == "__main__" : main()
-
-  
-    
 
 
 
