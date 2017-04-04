@@ -7,7 +7,7 @@ from socket import *
 import commands
 import threading
 import Queue
-##import stack
+from collections import deque
 
 import numpy as np
 import numpy.core.defchararray as np_f
@@ -112,7 +112,7 @@ class Mouse:
                 self.depthSearch()
             elif len(self.visited) < len(maze): ## all paths visited
                 break
-            
+           		
     def updateVisited(self, swarm_update):
         'Updates visited stack with those received from other nodes' 
         new_visited = set(swarm_update)
@@ -129,29 +129,35 @@ class ActionThread(threading.Thread):
 ##    comm.bind(('', PORT))
 ##    comm.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
-    def __init__(self, threadID, name, q, Mouse):
+    def __init__(self, threadID, name, q, maze):
         self.ip = commands.getoutput('hostname -I') # necessary
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
-        self.q = q
+		self.maze = maze
         
     def run(self):
-        if self.name == 'Search': depthSearch()
-        if self.name == 'TX': txVisited()
-    if self.name == 'RX': rxVisited(mouse)
+		threadLock.acquire()
+        if self.name == 'Search': 
+			find_path_dfs(maze)
+			threadLock.release()
+        if self.name == 'TX': 
+			txVisited()
+			threadLock.release()
+		if self.name == 'RX': 
+			rxVisited()
+			threadLock.release()
 
-    
-             
-def rxVisited(Mouse):
+   
+def rxVisited():
     'Update current stack with received visited '
     data, addr = s.recvfrom(1024)
-    mouse.visited.append(int(data)) 
+    visited.append(int(data)) 
 
 
-def txVisited(Mouse):
+def txVisited():
     'Broadcast visited cells'
-    data = struct.pack(str, Mouse.visited) ## convert visited to byte string
+    data = struct.pack(str, visited) ## convert visited to byte string
     s.sendto(data, ('<broadcast>', PORT))
 
 
@@ -190,36 +196,50 @@ def maze2graph(maze):
             graph[row, col+1].append('W', (row, col))
     return graph    
     
+def find_path_dfs(maze):
+	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
+	stack = deque([("", start)])
+	visited = set()
+	graph = maze2graph(maze)
+	while stack:
+		path, current = stack.pop()
+		if current == goal:
+			return path
+		if current in visited:
+			continue
+
+		for direction, neighbour in graph[current]:
+			stack.append((path + direction, neighbour))
+	return "No Path Found!"
 
 def main():
 
     maze = 'allamerica2013.maz'
-    maze = byteMaze(maze)
-  ##  maze = txtMaze(maze)
-    
- ##   graph = maze2graph(maze)
-    
-    mouse = Mouse(maze)
-
+    maze = txtMaze(maze)
+	
+	multicast_group = ''
+	server_address = ('', 10000)
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	ttl = struct.pack('b', 1)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+	
     while True:
-        if mouse.pos != waypoints['goal']: 
-        
+		search = ActionThread(1, 'Search')
+		tx = ActionThread(2, 'TX')
+		rx = ActionThread(3, 'RX')  
 
-            tx = ActionThread(1, 'TX')
-            rx = ActionThread(2, 'RX')  
-            search = ActionThread(3, 'Search')
-
-            tx.start()
-            rx.start()
-            search.start()    
-            
-    else: 
-                print 'Maze mapped Successfully' ## Trigger core shutdown coresendmesg
-                tx.join()
-                rx.join()
-                search.join()   
-
-
+		tx.start()
+		rx.start()
+		search.start()  
+		
+		threads = []
+		threads.append(tx)
+		threads.append(rx)
+		threads.append(search)
+		
+		for t in threads:
+			t.join()
+	
 if __name__ == "__main__" : main()
 
 
@@ -227,4 +247,4 @@ if __name__ == "__main__" : main()
 
 
 
-#
+
