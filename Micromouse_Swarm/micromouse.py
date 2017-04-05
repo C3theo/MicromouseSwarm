@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
 import sys, time
+import commands
+
 import struct
 from socket import *
 
-import commands
+
 import threading
 import Queue
 from collections import deque
@@ -12,7 +14,7 @@ from collections import deque
 import numpy as np
 import numpy.core.defchararray as np_f
 
-import commands
+
 
 """ Wireless Micromouse Maze Solver
 
@@ -26,25 +28,6 @@ import commands
 >Avoid taking paths traveled by other mice
 >Exit when all cells traveled
 
-> 3 threads = TX, RX, Search
-or 2
-
->Multicast send/recv
->One node as sender and then others receive
->Reuse Socket address
-
-
-
-These are separate 
-GUI
-
-CORE - 'coresendmesg'
->send pos to host (controlnet)
->send shutdown message when mazecomplete
-
-Pygame
->Receive mouse position on port/socket
->Controlnet/ssh 
 
  """
 
@@ -116,51 +99,15 @@ class Mouse:
                 self.depthSearch()
             elif len(self.visited) < len(maze): ## all paths visited
                 break
-           		
-    def updateVisited(self, swarm_update):
-        'Updates visited stack with those received from other nodes' 
-        new_visited = set(swarm_update)
-        self.visited = self.visited.union(new_visited)
-
-
-
-        
-class ActionThread(threading.Thread):
-    """Thread"""
-
-
-    def __init__(self, threadID, name ):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-		self.maze = maze
-        
-    def run(self):
-		threadLock.acquire()
-        if self.name == 'Search': 
-			find_path_dfs(maze)
-			threadLock.release()
-        if self.name == 'TX': 
-			txVisited()
-			threadLock.release()
-		if self.name == 'RX': 
-			rxVisited()
-			threadLock.release()
+           				
 			
-			
-class Packer:
-	"""Pack and unpack Visited cell data"""
-	def __init__(init):
-	
-	def pack
-	
-	def unpack
-
-
-def find_path_dfs(maze, Event):
-	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
+def find_path_dfs(maze, e):
+	global visited
+	global s
+#	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
+	start = {'n1':(1,1), 'n2':(len(maze) - 2, len(maze[0]) - 2), 'n3':(1,31), 'n4':(31,1) }
+	start, goal = start[gethostname()], (17,17)
 	stack = deque([("", start)])
-	visited = set()
 	graph = maze2graph(maze)
 	while stack:
 		path, current = stack.pop()
@@ -168,30 +115,43 @@ def find_path_dfs(maze, Event):
 			return path
 		if current in visited:
 			continue
-
-		if not Event.is_set():
-			visited.add(current)
-			Event.set()
-		
+		visited.append(current)
+		tx = threading.Thread(target=txVisited, args=(e,)).start()
+		rx = threading.Thread(target=rxVisited, args=(e,)).start()
+		time.sleep(3)
+		print 'Searching'
 		for direction, neighbour in graph[current]:
 			stack.append((path + direction, neighbour))
 	return "No Path Found!"
 	
-def rxVisited(Event):
-    'Update current stack with received visited '
+def rxVisited(e):
+	'Update current stack with received visited '
+	global visited
+	global s
+	global myip
+	data, addr = s.recvfrom(1024)
+	if not e.is_set(): e.set()
+	#	data = struct.unpack('I', data)
+	if addr != myip:
+		print(addr)
+		unpacked_data = struct.unpack(">%i" % len(visited), *visited)
 
-    data, addr = s.recvfrom(1024)
-	# unpack data
-	Event.clear()
+		visited = visited.symmetric_difference(unpacked_data)
+		print(visited) 
 	
-   
 
+def txVisited(e):
+	'Broadcast visited cells'
+	global visited
+	global BROADCAST
+	global PORT
+	global s
+	print'TX'
+	packed_data = struct.pack(">%i" % len(visited), *visited) ## convert visited to byte string
+	
+	s.sendto(packed_data, (BROADCAST, PORT))
+	if not e.is_set(): e.set()
 
-def txVisited():
-    'Broadcast visited cells'
-    data = struct.pack(str, visited) ## convert visited to byte string
-    s.sendto(data, ('<broadcast>', PORT))
-	Event.()
 
 
 def byteMaze(file):
@@ -222,43 +182,34 @@ def maze2graph(maze):
     graph = {(i,j): [] for j in range(width) for i in range(height) if not maze[i][j]}
     for row, col in graph.keys():
         if row < height-1 and not maze[row+1][col]: # check N S neighbors
-            graph[(row, col)].append('S',(row+1, col))
-            graph[(row+1, col)].append('N', (row, col))
+            graph[(row, col)].append(('S',(row+1, col)))
+            graph[(row+1, col)].append(('N', (row, col)))
         if col < width -1 and not maze[row][col+1]: #check E W neighbors
-            graph[row, col].append('E', (row,col+1))
-            graph[row, col+1].append('W', (row, col))
+            graph[row, col].append(('E', (row,col+1)))
+            graph[row, col+1].append(('W', (row, col)))
     return graph    
-    
 
+
+PORT = 5000
+BROADCAST = '192.168.0.255'
+
+myip = commands.getoutput("hostname -I")
+
+s = socket(AF_INET, SOCK_DGRAM)
+s.bind(('', PORT))
+s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+
+
+visited = []
 
 def main():
-	Event = threading.Event
-	
-    maze = 'allamerica2013.maz'
-    maze = txtMaze(maze)
-	
-	multicast_group = '224.0.0.0'
-	server_address = ('', 10000)
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	ttl = struct.pack('b', 1)
-	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
-	
-    while True:
-		search = ActionThread(1, 'Search')
-		tx = ActionThread(2, 'TX')
-		rx = ActionThread(3, 'RX')  
+	print(myip)
+	maze = 'mazeTest'
+	maze = textMaze(maze)
 
-		tx.start()
-		rx.start()
-		search.start()  
-		
-		threads = []
-		threads.append(tx)
-		threads.append(rx)
-		threads.append(search)
-		
-		for t in threads:
-			t.join()
+	e = threading.Event()
+	
+	find_path_dfs(maze, e)
 	
 if __name__ == "__main__" : main()
 

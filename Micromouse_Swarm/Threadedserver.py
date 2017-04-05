@@ -34,5 +34,5 @@ class ThreadedServer(object):
                 return False
 
 if __name__ == "__main__":
-    port_num = input("Port? ")
-    ThreadedServer('',port_num).listen()
+   # port_num = input("Port?")
+    ThreadedServer('',12345).listen()
