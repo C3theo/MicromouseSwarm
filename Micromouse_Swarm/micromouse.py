@@ -27,11 +27,15 @@ import commands
 >Exit when all cells traveled
 
 > 3 threads = TX, RX, Search
+or 2
 
 >Multicast send/recv
 >One node as sender and then others receive
 >Reuse Socket address
 
+
+
+These are separate 
 GUI
 
 CORE - 'coresendmesg'
@@ -48,7 +52,7 @@ class Mouse:
     'Search and store all available paths in maze'
     
     compass = {"W":8,"S":4,"E":2,"N":1}
-    waypoints = {'start':[(0,0),(0,14),(15,0),(0,15)], 'goal':[(8,8)]} ## Need to figure out how to start each mouse in different locations within each script
+    waypoints = {'start':[(0,0),(0,14),(15,0),(0,15)], 'goal':[(8,8)]} 
     nodes = ['n1','n4','n3','n4']
     ready_pos = dict(zip(nodes,waypoints['start']))
 
@@ -122,15 +126,10 @@ class Mouse:
 
         
 class ActionThread(threading.Thread):
-    'Threads for send, receive, or search'
+    """Thread"""
 
-##    PORT = 5000
-##    comm = socket(AF_INET, SOCK_DGRAM)
-##    comm.bind(('', PORT))
-##    comm.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
-    def __init__(self, threadID, name, q, maze):
-        self.ip = commands.getoutput('hostname -I') # necessary
+    def __init__(self, threadID, name ):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -147,18 +146,52 @@ class ActionThread(threading.Thread):
 		if self.name == 'RX': 
 			rxVisited()
 			threadLock.release()
+			
+			
+class Packer:
+	"""Pack and unpack Visited cell data"""
+	def __init__(init):
+	
+	def pack
+	
+	def unpack
 
-   
-def rxVisited():
+
+def find_path_dfs(maze, Event):
+	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
+	stack = deque([("", start)])
+	visited = set()
+	graph = maze2graph(maze)
+	while stack:
+		path, current = stack.pop()
+		if current == goal:
+			return path
+		if current in visited:
+			continue
+
+		if not Event.is_set():
+			visited.add(current)
+			Event.set()
+		
+		for direction, neighbour in graph[current]:
+			stack.append((path + direction, neighbour))
+	return "No Path Found!"
+	
+def rxVisited(Event):
     'Update current stack with received visited '
+
     data, addr = s.recvfrom(1024)
-    visited.append(int(data)) 
+	# unpack data
+	Event.clear()
+	
+   
 
 
 def txVisited():
     'Broadcast visited cells'
     data = struct.pack(str, visited) ## convert visited to byte string
     s.sendto(data, ('<broadcast>', PORT))
+	Event.()
 
 
 def byteMaze(file):
@@ -196,28 +229,15 @@ def maze2graph(maze):
             graph[row, col+1].append('W', (row, col))
     return graph    
     
-def find_path_dfs(maze):
-	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
-	stack = deque([("", start)])
-	visited = set()
-	graph = maze2graph(maze)
-	while stack:
-		path, current = stack.pop()
-		if current == goal:
-			return path
-		if current in visited:
-			continue
 
-		for direction, neighbour in graph[current]:
-			stack.append((path + direction, neighbour))
-	return "No Path Found!"
 
 def main():
-
+	Event = threading.Event
+	
     maze = 'allamerica2013.maz'
     maze = txtMaze(maze)
 	
-	multicast_group = ''
+	multicast_group = '224.0.0.0'
 	server_address = ('', 10000)
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	ttl = struct.pack('b', 1)
