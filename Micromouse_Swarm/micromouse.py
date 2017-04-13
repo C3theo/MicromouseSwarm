@@ -3,16 +3,16 @@
 import sys, time
 import commands
 
-import struct
+import pickle
 from socket import *
 
-
 import threading
-import Queue
 from collections import deque
 
 import numpy as np
 import numpy.core.defchararray as np_f
+
+import subprocess 
 
 
 
@@ -30,82 +30,13 @@ import numpy.core.defchararray as np_f
 
 
  """
-
-class Mouse:
-    'Search and store all available paths in maze'
-    
-    compass = {"W":8,"S":4,"E":2,"N":1}
-    waypoints = {'start':[(0,0),(0,14),(15,0),(0,15)], 'goal':[(8,8)]} 
-    nodes = ['n1','n4','n3','n4']
-    ready_pos = dict(zip(nodes,waypoints['start']))
-
-     
-    def __init__(self, maze, name = 'n1'):
-        self.maze = maze
-        self.name = name
-        self.visited = []
-        self.pos = Mouse.read_pos[name]
-        self.findStart()
-  
-    def findStart(self):
-        'Find valid start postion (less than 4 walls) '
-        x, y = self.pos
-        if bin(self.maze[x][y]).count('1') == 4: pass
-            # move to neighbor position and check again.
-            
-    def findNeighbor(self):
-        'Returns position of neighbor cell.'
-        x,y = self.pos
-        if self.way == "N": y += 1
-        elif self.way == "S": y -= 1
-        elif self.way == "E": x += 1
-        elif self.way == "W": x -= 1
-        return x,y
-    
-    def inBounds(self):
-        return (0< self.x <len(maze)-1) and (0 < self.y < len(maze)-1)
-    
-    def peekNeighbors(self):
-        'return list of all neighbor cells' 
-        return [findNeighbors() for self.way in nesw.keys() if inBounds()]
-
-    def pathFree(self, pos, way):
-        ' Check path open'
-        x, y = self.pos
-        return (nesw[way] & (maze[x][y]&0xF)) == 0
-        
-    def findPaths(self):
-        'Return list of accessible paths.' 
-        return [findNeighbor() for self.way in nesw.keys() if self.pathFree()]
-
-    def depthSearch(self):
-        'Find all paths throughout the maze (does not solve)'
-        self.visited.append(self.pos)
-        
-        # send
-        txVisited(self.visited)
-        
-        # recv
-        newpaths = rxVisited(swarm_update)
-        
-        # update with other stacks
-        updateVisited(newpaths)
-        
-        time.sleep(500) # give time to update stack from other mice
-        neighbors = self.findNeighbors()
-        
-        for self.pos in neighbors:
-            if self.pos not in self.visited:
-                self.depthSearch()
-            elif len(self.visited) < len(maze): ## all paths visited
-                break
            				
 			
-def find_path_dfs(maze, e):
+def find_path_dfs(maze):
 	global visited
 	global s
 #	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
-	start = {'n1':(1,1), 'n2':(len(maze) - 2, len(maze[0]) - 2), 'n3':(1,31), 'n4':(31,1) }
+	start = {'n2':(1,1), 'n3':(len(maze) - 2, len(maze[0]) - 2), 'n4':(1,31), 'n5':(31,1) }
 	start, goal = start[gethostname()], (17,17)
 	stack = deque([("", start)])
 	graph = maze2graph(maze)
@@ -115,55 +46,53 @@ def find_path_dfs(maze, e):
 			return path
 		if current in visited:
 			continue
-		visited.append(current)
-		tx = threading.Thread(target=txVisited, args=(e,)).start()
-		rx = threading.Thread(target=rxVisited, args=(e,)).start()
+		visited.add(current)
+		tx = threading.Thread(target=txVisited).start()
+		rx = threading.Thread(target=rxVisited).start()
+		#move = threading.Thread(target=moveNode, args = current).start()
+		#moveNode(current)
+		
 		time.sleep(3)
 		print 'Searching'
 		for direction, neighbour in graph[current]:
 			stack.append((path + direction, neighbour))
 	return "No Path Found!"
 	
-def rxVisited(e):
+def rxVisited():
 	'Update current stack with received visited '
 	global visited
 	global s
 	global myip
 	data, addr = s.recvfrom(1024)
-	if not e.is_set(): e.set()
-	#	data = struct.unpack('I', data)
-	if addr != myip:
-		print(addr)
-		unpacked_data = struct.unpack(">%i" % len(visited), *visited)
+	new_visited = pickle.loads(data)
+	visited = visited | new_visited
+	print(addr[0])
+	print(visited)
 
-		visited = visited.symmetric_difference(unpacked_data)
-		print(visited) 
-	
 
-def txVisited(e):
+def txVisited():
 	'Broadcast visited cells'
 	global visited
 	global BROADCAST
 	global PORT
 	global s
 	print'TX'
-	packed_data = struct.pack(">%i" % len(visited), *visited) ## convert visited to byte string
+	data = pickle.dumps(visited)
+	s.sendto(data, (BROADCAST, PORT))
 	
-	s.sendto(packed_data, (BROADCAST, PORT))
-	if not e.is_set(): e.set()
+	
+def moveNode(cell):
 
-
-
-def byteMaze(file):
-    'Read binary Maze files into 16x16 maze'
-    # 'received {!r}'.format(binascii.hexlify(data)) better way
-    hexformat = lambda hexstr: int(hexstr,16)
-    with open(file, "rb") as f:
-        maze = ["{:02x}".format(ord(c)) for c in f.read()]
-        maze = map(hexformat,maze)
-        maze = zip(*[iter(maze)]*16)
-        maze = map(list,maze)  
-    return maze
+	ypos, xpos = cell
+	xpos = xpos*47
+	ypos = ypos*47
+	hostname = gethostname()
+	nodenum = hostname[-1]
+	#send = 'coresendmsg node number=%c xpos=%d ypos=%d' % (nodenum, xpos, ypos)
+	#commands.getstatusoutput(["ssh theo@172.168.0.254 '%s' " % send])
+	#print(send)
+	#subprocess.call([send]) 
+	
 
 def textMaze(file):
     'Read txt maze (33x33). 1 = wall 0 = path'
@@ -200,16 +129,15 @@ s.bind(('', PORT))
 s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
 
-visited = []
+
+visited = set()
 
 def main():
 	print(myip)
+
 	maze = 'mazeTest'
 	maze = textMaze(maze)
-
-	e = threading.Event()
-	
-	find_path_dfs(maze, e)
+	find_path_dfs(maze)
 	
 if __name__ == "__main__" : main()
 

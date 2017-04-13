@@ -24,10 +24,12 @@ node n1 {
 	}
     }
     canvas c1
-    iconcoords {446.0 344.0}
-    labelcoords {446.0 376.0}
+    iconcoords {385.0 386.0}
+    labelcoords {385.0 418.0}
     interface-peer {e0 n2}
     interface-peer {e1 n3}
+    interface-peer {e2 n4}
+    interface-peer {e3 n5}
 }
 
 node n2 {
@@ -41,8 +43,8 @@ node n2 {
 	!
     }
     canvas c1
-    iconcoords {226.0 247.0}
-    labelcoords {226.0 279.0}
+    iconcoords {266.0 310.0}
+    labelcoords {266.0 342.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
@@ -101,8 +103,128 @@ node n3 {
 	!
     }
     canvas c1
-    iconcoords {679.0 262.0}
-    labelcoords {679.0 294.0}
+    iconcoords {510.0 307.0}
+    labelcoords {510.0 339.0}
+    interface-peer {eth0 n1}
+    custom-config {
+	custom-config-id service:MyService
+	custom-command MyService
+	config {
+	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mazeTest
+	custom-command mazeTest
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mazeTest
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:allamerica2013.maz
+	custom-command allamerica2013.maz
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/allamerica2013.maz
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:micromouse.py
+	custom-command micromouse.py
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/micromouse.py
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:bcastsend.py
+	custom-command bcastsend.py
+	config {
+	file:///home/theo/Micromouse_Core/CORE/bcastsend.py
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:bcastrecv.py
+	custom-command bcastrecv.py
+	config {
+	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	}
+    }
+    services {zebra OSPFv3MDR vtysh IPForward MyService}
+}
+
+node n4 {
+    type router
+    model mdr
+    network-config {
+	hostname n4
+	!
+	interface eth0
+	 ip address 192.168.0.3/24
+	!
+    }
+    canvas c1
+    iconcoords {263.0 504.0}
+    labelcoords {263.0 536.0}
+    interface-peer {eth0 n1}
+    custom-config {
+	custom-config-id service:MyService
+	custom-command MyService
+	config {
+	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mazeTest
+	custom-command mazeTest
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mazeTest
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:allamerica2013.maz
+	custom-command allamerica2013.maz
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/allamerica2013.maz
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:micromouse.py
+	custom-command micromouse.py
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/micromouse.py
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:bcastsend.py
+	custom-command bcastsend.py
+	config {
+	file:///home/theo/Micromouse_Core/CORE/bcastsend.py
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:bcastrecv.py
+	custom-command bcastrecv.py
+	config {
+	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	}
+    }
+    services {zebra OSPFv3MDR vtysh IPForward MyService}
+}
+
+node n5 {
+    type router
+    model mdr
+    network-config {
+	hostname n5
+	!
+	interface eth0
+	 ip address 192.168.0.4/24
+	!
+    }
+    canvas c1
+    iconcoords {511.0 505.0}
+    labelcoords {511.0 537.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
@@ -158,8 +280,21 @@ link l2 {
     nodes {n1 n3}
 }
 
+link l3 {
+    nodes {n1 n4}
+}
+
+link l4 {
+    nodes {n1 n5}
+}
+
 canvas c1 {
     name {Canvas1}
+    refpt {0 0 47.5791667 -122.132322 2.0}
+    scale {150.0}
+    wallpaper-style {scaled}
+    wallpaper {/home/theo/MicromouseSwarm/Micromouse_Swarm/2016apec.png}
+    size {772 772}
 }
 
 option global {
@@ -176,5 +311,11 @@ option global {
 }
 
 option session {
+    controlnet=172.168.0.0/24
+    controlnet_updown_script=
+    enablerj45=1
+    enablesdt=0
+    preservedir=0
+    sdturl=tcp://127.0.0.1:50000/
 }
 
