@@ -38,6 +38,7 @@ def find_path_dfs(maze):
 #	start, goal = (1, 1), (len(maze) - 2, len(maze[0]) - 2)
 	start = {'n2':(1,1), 'n3':(len(maze) - 2, len(maze[0]) - 2), 'n4':(1,31), 'n5':(31,1) }
 	start, goal = start[gethostname()], (17,17)
+	#txPosition(start)
 	stack = deque([("", start)])
 	graph = maze2graph(maze)
 	while stack:
@@ -47,10 +48,10 @@ def find_path_dfs(maze):
 		if current in visited:
 			continue
 		visited.add(current)
+		txPosition(current)
 		tx = threading.Thread(target=txVisited).start()
 		rx = threading.Thread(target=rxVisited).start()
-		#move = threading.Thread(target=moveNode, args = current).start()
-		#moveNode(current)
+
 		
 		time.sleep(3)
 		print 'Searching'
@@ -58,11 +59,14 @@ def find_path_dfs(maze):
 			stack.append((path + direction, neighbour))
 	return "No Path Found!"
 	
+
+	
 def rxVisited():
 	'Update current stack with received visited '
 	global visited
 	global s
 	global myip
+	print 'RX'
 	data, addr = s.recvfrom(1024)
 	new_visited = pickle.loads(data)
 	visited = visited | new_visited
@@ -81,18 +85,23 @@ def txVisited():
 	s.sendto(data, (BROADCAST, PORT))
 	
 	
-def moveNode(cell):
+def txPosition(cell):
+	global ctrlip
 
 	ypos, xpos = cell
-	xpos = xpos*47
-	ypos = ypos*47
+	xpos = xpos/2*50
+	ypos = ypos/2*50
 	hostname = gethostname()
 	nodenum = hostname[-1]
-	#send = 'coresendmsg node number=%c xpos=%d ypos=%d' % (nodenum, xpos, ypos)
-	#commands.getstatusoutput(["ssh theo@172.168.0.254 '%s' " % send])
-	#print(send)
-	#subprocess.call([send]) 
 	
+	coreString = 'coresendmsg node number=%c xpos=%d ypos=%d' % (nodenum, xpos, ypos)
+	ctrl = socket(AF_INET, SOCK_STREAM)
+	ctrl.connect((ctrlip, 1337))
+	data = coreString.encode()
+	ctrl.send(data)
+	ctrl.close()
+
+
 
 def textMaze(file):
     'Read txt maze (33x33). 1 = wall 0 = path'
@@ -124,6 +133,8 @@ BROADCAST = '192.168.0.255'
 
 myip = commands.getoutput("hostname -I")
 
+ctrlip = '172.168.0.254'
+
 s = socket(AF_INET, SOCK_DGRAM)
 s.bind(('', PORT))
 s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
@@ -135,7 +146,7 @@ visited = set()
 def main():
 	print(myip)
 
-	maze = 'mazeTest'
+	maze = '2016apec.maze'
 	maze = textMaze(maze)
 	find_path_dfs(maze)
 	

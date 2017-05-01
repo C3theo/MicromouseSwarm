@@ -43,15 +43,23 @@ node n2 {
 	!
     }
     canvas c1
-    iconcoords {266.0 310.0}
-    labelcoords {266.0 342.0}
+    iconcoords {750.0 150.0}
+    labelcoords {750.0 182.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
 	custom-command MyService
 	config {
 	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
-	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', 'mouseservice.sh', )
+	cmdup=('sh mouseservice.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mouseservice.sh
+	custom-command mouseservice.sh
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     custom-config {
@@ -86,7 +94,7 @@ node n2 {
 	custom-config-id service:MyService:bcastrecv.py
 	custom-command bcastrecv.py
 	config {
-	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     services {zebra OSPFv3MDR vtysh IPForward MyService}
@@ -103,15 +111,23 @@ node n3 {
 	!
     }
     canvas c1
-    iconcoords {510.0 307.0}
-    labelcoords {510.0 339.0}
+    iconcoords {50.0 650.0}
+    labelcoords {50.0 682.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
 	custom-command MyService
 	config {
 	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
-	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', 'mouseservice.sh', )
+	cmdup=('sh mouseservice.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mouseservice.sh
+	custom-command mouseservice.sh
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     custom-config {
@@ -146,7 +162,7 @@ node n3 {
 	custom-config-id service:MyService:bcastrecv.py
 	custom-command bcastrecv.py
 	config {
-	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     services {zebra OSPFv3MDR vtysh IPForward MyService}
@@ -163,15 +179,23 @@ node n4 {
 	!
     }
     canvas c1
-    iconcoords {263.0 504.0}
-    labelcoords {263.0 536.0}
+    iconcoords {700.0 750.0}
+    labelcoords {700.0 782.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
 	custom-command MyService
 	config {
 	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
-	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', 'mouseservice.sh', )
+	cmdup=('sh mouseservice.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mouseservice.sh
+	custom-command mouseservice.sh
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     custom-config {
@@ -206,7 +230,7 @@ node n4 {
 	custom-config-id service:MyService:bcastrecv.py
 	custom-command bcastrecv.py
 	config {
-	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     services {zebra OSPFv3MDR vtysh IPForward MyService}
@@ -223,15 +247,23 @@ node n5 {
 	!
     }
     canvas c1
-    iconcoords {511.0 505.0}
-    labelcoords {511.0 537.0}
+    iconcoords {484.0 460.0}
+    labelcoords {484.0 492.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:MyService
 	custom-command MyService
 	config {
 	dirs=('/ome/theo/Micromouse_Core/11simple.maz', )
-	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', )
+	files=('bcastrecv.py', 'bcastsend.py', 'micromouse.py', 'allamerica2013.maz', 'mazeTest', 'mouseservice.sh', )
+	cmdup=('sh mouseservice.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:MyService:mouseservice.sh
+	custom-command mouseservice.sh
+	config {
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     custom-config {
@@ -266,7 +298,7 @@ node n5 {
 	custom-config-id service:MyService:bcastrecv.py
 	custom-command bcastrecv.py
 	config {
-	file:///home/theo/Micromouse_Core/CORE/bcastrecv.py
+	file:///home/theo/MicromouseSwarm/Micromouse_Swarm/mouseservice.sh
 	}
     }
     services {zebra OSPFv3MDR vtysh IPForward MyService}
@@ -292,9 +324,9 @@ canvas c1 {
     name {Canvas1}
     refpt {0 0 47.5791667 -122.132322 2.0}
     scale {150.0}
-    wallpaper-style {scaled}
-    wallpaper {/home/theo/MicromouseSwarm/Micromouse_Swarm/2016apec.png}
-    size {772 772}
+    wallpaper-style {upperleft}
+    wallpaper {}
+    size {772 832.0}
 }
 
 option global {
